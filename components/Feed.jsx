@@ -2,11 +2,17 @@
 
 import React, { useEffect, useState } from 'react'
 import PromptCard from './PromptCard'
+import { useSession } from 'next-auth/react'
 
-const PromptCardList = ({ data, handleTagClick }) => {
+const PromptCardList = ({ data, handleTagClick, searchText }) => {
   return (
     <div className="mt-16 prompt_layout">
-      {data.map((post) => (
+      {data.length && data.filter(post => {
+        if(searchText === '') return post
+        else if(post.prompt.toLowerCase().includes(searchText.toLowerCase())) return post;
+        else if(post.tag.toLowerCase().includes(searchText.toLowerCase())) return post;
+        else if(post.creator.username.toLowerCase().includes(searchText.toLowerCase())) return post;
+      }).map((post) => (
         <PromptCard 
           key={post._id}
           post={post}
@@ -20,6 +26,7 @@ const PromptCardList = ({ data, handleTagClick }) => {
 const Feed = () => {
   const [searchText, setSearchText] = useState('')
   const [posts, setPosts] = useState([])
+  const {data: session} = useSession()
 
   const handleSearchChange = (e) => {
     setSearchText(e.target.value)
@@ -37,23 +44,28 @@ const Feed = () => {
   }, [])
 
   return (
-    <section className="feed">
-      <form className="relative w-full flex-center">
-        <input 
-          type="text" 
-          className="search_input peer" 
-          placeholder='Search for a tag or a username'
-          value={searchText}
-          onChange={handleSearchChange}
-          required
-        />
-      </form>
-
-      <PromptCardList
-        data={posts}
-        handleTagClick={() => {}}
-      />
-    </section>
+    <>
+      {session?.user && (
+        <section className="feed">
+          <form className="relative w-full flex-center">
+            <input 
+              type="text" 
+              className="search_input peer" 
+              placeholder='Search for a tag or a username'
+              value={searchText}
+              onChange={handleSearchChange}
+              required
+            />
+          </form>
+    
+          <PromptCardList
+            data={posts}
+            handleTagClick={(tag) => setSearchText(tag)}
+            searchText={searchText}
+          />
+        </section>
+      )}
+    </>
   )
 }
 
